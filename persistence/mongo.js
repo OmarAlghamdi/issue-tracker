@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const utils = require('../utils');
 
 class Database {
     
@@ -13,24 +14,44 @@ class Database {
                 console.error(err);
             });
         
-        const [ issueSchema ] = this.createSchemas();
+        const [ issueSchema, userSchema ] = this.createSchemas();
 
         this.issue = mongoose.model('Issue', issueSchema);
+        this.user = mongoose.model('User', userSchema);
     }
 
     createSchemas() {
+        const commentSchema = new mongoose.Schema({
+            content:    { type: String, required: true },
+            writer:     { type: String, required: true }
+        }, { timestamps: true });
+
         const issueSchema = new mongoose.Schema({
             title:      { type: String, required: true },
             desc:       { type: String },
-            status:     { type: String, required: true, enum: ['open', 'closed'] },
-            priority:   { type: String, enum: ['high', 'low'] },
-            deadline:   { type: Date }
+            status:     { type: String, required: true, enum: ['open', 'closed', 'in progress', 'testing'] },
+            priority:   { type: String, enum: ['high', 'medium', 'low'] },
+            deadline:   { type: Date },
+            comments: [commentSchema]
     
         }, { timestamps: true });
 
-        return [ issueSchema ];
+        const userSchema = new mongoose.Schema({
+            role:       { type: String, required: true, enum: ['admin', 'project manager', 'developer', 'support'] },
+            firstName:  { type: String, required: true },
+            lastName:   { type: String, required: true },
+            email:      { type: String, required: true, validate: utils.validateEmail },
+            status:     { type: String, required: true, enum: ['active', 'inactive'] } 
+        }, { timestamps: true });
+        
+        userSchema.virtual('name').get(() => {
+            return this.firstName + ' ' + this.lastName;
+        });
+
+        return [ issueSchema, userSchema ];
     }
 
+    // issue queries
     getIssues() {
         return this.issue.find({}, '_id title status').exec();
     }
@@ -58,6 +79,39 @@ class Database {
             })
             .then(() => this.issue.findById(id).exec())
             .catch(err => console.error(err));
+    }
+
+    // user queries
+    getUsers() {
+        return this.user.find({}, '_id name role').exec();
+    }
+
+    getUser(id) {
+        return this.user.findById(id).exec();
+    }
+
+    addUser({ user }) {
+        const { role, firstName, lastName, email } = user;
+        this.user.create({ role, firstName, lastName, email, status: 'active' });
+    }
+
+    updateUser(id, { user }) {
+        const { role, firstName, lastName, email, status } = user;
+        this.user.findById(id).exec()
+            .then(doc => {
+                doc.role = role? role : doc.role;
+                doc.firstName = firstName? firstName : doc.firstName;
+                doc.lastName = lastName? lastName : doc.lastName;
+                doc.email = email? email : doc.email;
+
+                return doc.save();
+            })
+            .then(() => this.user.findById(id).exec())
+            .catch(err => console.error(err));
+    }
+
+    deleteUser(id) {
+        return this.user.findByIdAndUpdate(id, { status: 'inactive' }).exec();
     }
 }
 
