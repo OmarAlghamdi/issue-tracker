@@ -11,7 +11,9 @@ server.use(bodyParser.json());
 const db = new Database(process.env.MONGO_URL, process.env.MONGO_PORT, process.env.MONGO_DB)
 
 const issuesRouter = require('./routes/issues')(db);
+const usersRouter = require('./routes/users')(db);
 server.use('/api/issues', issuesRouter);
+server.use('/api/users', usersRouter);
 
 
 const PORT = process.env.PORT;

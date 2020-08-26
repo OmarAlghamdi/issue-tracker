@@ -111,7 +111,8 @@ class Database {
     }
 
     deleteUser(id) {
-        return this.user.findByIdAndUpdate(id, { status: 'inactive' }).exec();
+        return this.user.findByIdAndUpdate(id, { status: 'inactive' }).exec()
+            .then(() => this.user.findById(id).exec());
     }
 }
 

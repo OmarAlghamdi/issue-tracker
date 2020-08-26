@@ -1,43 +1,49 @@
 const express = require('express');
 
 const init = (db) => {
-    const issuesRouter = express.Router();
+    const usersRouter = express.Router();
 
-    issuesRouter.route('/')
+    usersRouter.route('/')
         .all((req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             next();
         })
         .get((req, res, next) => {
-            db.getIssues()
-                .then(issues => res.json(issues))
+            db.getUsers()
+                .then(users => res.json(users))
                 .catch(err => next(err));
         })
         .post((req, res, next) => {
-            db.postIssue(req.body)
-                .then(issue => res.json(issue))
+            db.addUser(req.body)
+                .then(user => res.json(user))
                 .catch(err => next(err));
         });
 
-    issuesRouter.route('/:id')
+    usersRouter.route('/:id')
         .all((req, res, next) => {
             res.setHeader('Content-Type', 'application/json');
             next();
         })
         .get((req, res, next) => {
             const { id } = req.params;
-            db.getIssue(id)
-                .then(issue => res.json(issue))
+            db.getUser(id)
+                .then(user => res.json(user))
                 .catch(err => next(err));
         })
         .put((req, res, next) => {
             const { id } = req.params;
-            db.updateIssue(id, req.body)
-                .then(issue => res.json(issue))
+            db.updateUser(id, req.body)
+                .then(user => res.json(user))
+                .catch(err => next(err));
+        })
+        .delete((req, res, next) => {
+            const { id } = req.params;
+            db.deleteUser(id)
+                .then(user => res.json(user))
                 .catch(err => next(err));
         });
 
-    return issuesRouter;
+    return usersRouter;
 }
 
 module.exports = init;
