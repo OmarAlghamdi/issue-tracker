@@ -1,3 +1,5 @@
+// @ts-check
+
 require('dotenv').config({ path: './config.env' });
 const http = require('http');
 const express = require('express');
@@ -8,14 +10,16 @@ const server = express();
 
 server.use(bodyParser.json());
 
+// connect to MongoDB
 const db = new Database(process.env.MONGO_URL, process.env.MONGO_PORT, process.env.MONGO_DB)
 
+// mount routers
 const issuesRouter = require('./routes/issues')(db);
 const usersRouter = require('./routes/users')(db);
 server.use('/api/issues', issuesRouter);
 server.use('/api/users', usersRouter);
 
-
+// start server
 const PORT = process.env.PORT;
 http.createServer(server)
     .listen(PORT, () => {
