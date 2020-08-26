@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fake-gen": "node generate-fake-data"
   },
   "keywords": [
     "issue",
@@ -14,6 +15,7 @@
   "author": "Omar Alghamdi",
   "license": "ISC",
   "devDependencies": {
+    "faker": "^5.0.0",
     "jsdoc": "^3.6.5",
     "nodemon": "^2.0.4"
   },
