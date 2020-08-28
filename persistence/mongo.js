@@ -23,10 +23,11 @@ class Database {
             });
         
         // create mongoose models
-        const [ issueSchema, userSchema ] = this.createSchemas();
+        const [ issueSchema, userSchema, commentSchema ] = this.createSchemas();
 
         this.issue = mongoose.model('Issue', issueSchema);
         this.user = mongoose.model('User', userSchema);
+        this.comment = mongoose.model('Comment', commentSchema);
     }
 
     /**
@@ -58,12 +59,16 @@ class Database {
         }, { timestamps: true });
         
         // creates virtual properties (not stored in the DB)
-        userSchema.virtual('name').get(() => {
+        userSchema.virtual('name').get(function() {
             // @ts-ignore
             return this.firstName + ' ' + this.lastName;
         });
+        commentSchema.virtual('summary').get(function() {
+            // @ts-ignore
+            return this.content.substr(0, 100);
+        })
 
-        return [ issueSchema, userSchema ];
+        return [ issueSchema, userSchema, commentSchema ];
     }
 
     // issue queries
@@ -82,7 +87,7 @@ class Database {
      * @returns {Promise}
      */
     getIssue(id) {
-        return this.issue.findById(id).exec();
+        return this.issue.findById(id).select('-comments').exec();
     }
 
     /**
@@ -183,6 +188,68 @@ class Database {
     deleteUser(id) {
         return this.user.findByIdAndUpdate(id, { status: 'inactive' }).exec()
             .then(() => this.user.findById(id).exec());
+    }
+
+    // comment queries
+
+    /**
+     * get comments. not entire content if long
+     * @param {string} id issue _id
+     */
+    getComments(id) {
+        return this.issue.findById(id, 'comments').exec()
+             .then(doc => {
+                 return new Promise((resolve, reject) => {
+                    const comments = [];
+                    // @ts-ignore
+                    doc.comments.forEach(c => comments.push({
+                        _id: c._id,
+                        summary: c.summary,
+                        writer: c.writer,
+                        createdAt: c.createdAt
+                    }));
+                    resolve(comments)
+                });
+             })
+             .catch(err => console.error(err));
+    }
+
+    /**
+     * get comment details
+     * @param {string} id comment _id
+     */
+    getComment(id) {
+        return this.issue.find({ "comments._id": id}).exec()
+            .then(doc => {
+                return new Promise((resolve, reject) => {
+                    // @ts-ignore
+                    const result = doc[0].comments.filter(c => c._id == id);
+                    resolve(result[0]);
+                });
+            })
+            .catch(err => console.error(err));
+    }
+
+    /**
+     * add new comment to issue
+     * @param {string} id issue _id
+     * @param {*} param1 request body
+     */
+    addComment(id, { comment }) {
+        const { content, writer } = comment;
+        return this.issue.findById(id).exec()
+            .then(doc => {
+                // @ts-ignore
+                doc.comments.push(new this.comment({ content, writer }));
+                return doc.save();
+            })
+            .then(doc => {
+                return new Promise((resolve, reject) => {
+                    // @ts-ignore
+                    resolve(doc.comments[doc.comments.length-1]);
+                });
+            })
+            .catch(err => console.error(err));
     }
 }
 
