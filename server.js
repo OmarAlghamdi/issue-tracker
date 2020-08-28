@@ -16,8 +16,10 @@ const db = new Database(process.env.MONGO_URL, process.env.MONGO_PORT, process.e
 // mount routers
 const issuesRouter = require('./routes/issues')(db);
 const usersRouter = require('./routes/users')(db);
+const commentsRouter = require('./routes/comments')(db);
 server.use('/api/issues', issuesRouter);
 server.use('/api/users', usersRouter);
+server.use('/api/comments', commentsRouter);
 
 // start server
 const PORT = process.env.PORT;
