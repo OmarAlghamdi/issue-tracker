@@ -46,7 +46,8 @@ class Database {
             status:     { type: String, required: true, enum: ['open', 'closed', 'in progress', 'testing'] },
             priority:   { type: String, enum: ['high', 'medium', 'low'] },
             deadline:   { type: Date },
-            comments: [commentSchema]
+            comments: [commentSchema],
+            assignees: []
     
         }, { timestamps: true });
 
@@ -106,7 +107,7 @@ class Database {
      * @param {*} param1 request body
      * @returns {Promise}
      */
-    updateIssue(id, { issue }) {
+    updateIssue(id, { issue, assignment }) {
         const { title, desc, status, priority, deadline } = issue;
         return this.issue.findById(id).exec()
             .then(doc => {
@@ -123,7 +124,19 @@ class Database {
                 
                 return doc.save();
             })
-            .then(() => this.issue.findById(id).exec())
+            .then(doc => {
+                if (assignment.op == 'add') {
+                    // @ts-ignore
+                    doc.assignees.push(assignment.user);
+                } else if (assignment.op == 'remove') {
+                    // @ts-ignore
+                    const idx = doc.assignees.indexOf(assignment.user);
+                    // @ts-ignore
+                    doc.assignees.splice(idx, 1);
+                }
+                return doc.save();
+            })
+            .then(() => this.issue.findById(id).select('-comments').exec())
             .catch(err => console.error(err));
     }
 
